@@ -1,0 +1,4 @@
+import asd from ./input2.txt
+import asd from ./folder/input3.txt
+
+Este es input.txt.
