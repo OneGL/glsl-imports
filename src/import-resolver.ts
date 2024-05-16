@@ -2,8 +2,14 @@ import path from 'path';
 import fs from 'fs/promises';
 import { Graph } from './graph';
 
-export class ImportGraph {
+export class ImportResolver {
   private graph: Graph<string> = new Graph();
+
+  static async resolve(filePath: string): Promise<string> {
+    const importGraph = new ImportResolver();
+    await importGraph.buildImportGraph(filePath);
+    return await importGraph.combineFiles(filePath);
+  }
 
   async buildImportGraph(filePath: string): Promise<Graph<string>> {
     const neighbors = await this.getFileImports(filePath);

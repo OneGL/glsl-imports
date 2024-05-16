@@ -1,10 +1,7 @@
-import { ImportGraph } from './import-graph';
+import { ImportResolver } from './import-resolver';
 
 async function main() {
-  const inputFile = './example/input.txt';
-  const importGraph = new ImportGraph();
-  await importGraph.buildImportGraph(inputFile);
-  const output = await importGraph.combineFiles(inputFile);
+  const output = await ImportResolver.resolve('./example/input.txt');
   console.log(output);
 }
 
