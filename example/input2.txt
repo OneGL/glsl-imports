@@ -1,3 +1,0 @@
-import asd from ./otro/input4.txt
-
-Este es input2.txt

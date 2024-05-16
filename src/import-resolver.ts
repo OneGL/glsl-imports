@@ -1,6 +1,9 @@
 import path from 'path';
 import fs from 'fs/promises';
 import { Graph } from './graph';
+import { parser, generate } from '@shaderfrog/glsl-parser';
+import { renameFunctions } from '@shaderfrog/glsl-parser/parser/utils';
+import type { ImportStatementNode, Program } from '@shaderfrog/glsl-parser/ast';
 
 export class ImportResolver {
   private graph: Graph<string> = new Graph();
@@ -12,7 +15,8 @@ export class ImportResolver {
   }
 
   async buildImportGraph(filePath: string): Promise<Graph<string>> {
-    const neighbors = await this.getFileImports(filePath);
+    const ast = parser.parse(await fs.readFile(filePath, 'utf-8'));
+    const neighbors = await this.getImports(ast, filePath).map((importData) => importData.importPath);
 
     for (const neighbor of neighbors) {
       this.graph.addEdge(filePath, neighbor);
@@ -41,10 +45,92 @@ export class ImportResolver {
       output += await this.combineFiles(neighbor, visited);
     }
 
-    const content = await fs.readFile(node, 'utf-8');
-    output += content;
-
+    output += await this.getFileContent(node);
     return output;
+  }
+
+  private fileId = 1;
+  private fileIds: Map<string, number> = new Map();
+
+  private getFileId(filePath: string): number {
+    const fileId = this.fileIds.get(filePath);
+
+    if (fileId) {
+      return fileId;
+    }
+
+    this.fileIds.set(filePath, this.fileId);
+    return this.fileId++;
+  }
+
+  private reservedNames: Map<string, string> = new Map();
+
+  private getFunctionName(functionName: string, filePath: string) {
+    const stem = path.basename(filePath, path.extname(filePath));
+    const fileId = this.getFileId(filePath);
+    const uniqueName = `${stem}_${functionName}_${fileId}`;
+
+    const reservedBy = this.reservedNames.get(functionName);
+
+    if (reservedBy === undefined) {
+      this.reservedNames.set(functionName, filePath);
+      return functionName;
+    } else if (reservedBy === filePath) {
+      return functionName;
+    }
+
+    return uniqueName;
+  }
+
+  private getImports(
+    ast: Program,
+    parentPath: string
+  ): {
+    importName: string;
+    importPath: string;
+  }[] {
+    const importNodes = ast.program.filter((node) => node.type === 'import_statement') as ImportStatementNode[];
+
+    return importNodes.map((node) => ({
+      importName: node.name.identifier,
+      // TODO: Check the parser to see if we can fix this
+      importPath: this.getAbsolutePath(node.path as unknown as string, parentPath),
+    }));
+  }
+
+  async getFileContent(filePath: string): Promise<string> {
+    let content = await fs.readFile(filePath, 'utf-8');
+
+    const ast = parser.parse(content);
+    const imports = this.getImports(ast, filePath);
+
+    // Rename functions
+    renameFunctions(ast.scopes[0], (name) => this.getFunctionName(name, filePath));
+    content = generate(ast);
+
+    // Rename imported functions
+    for (const { importName, importPath } of imports) {
+      // This regex will match all the function calls from the imported file
+      const regex = new RegExp(`${importName}\\.(\\w+)\\(`, 'g');
+
+      let match;
+
+      while (true) {
+        match = regex.exec(content);
+
+        if (!match) {
+          break;
+        }
+
+        const functionName = match[1];
+        const newFunctionName = this.getFunctionName(functionName, importPath);
+
+        // Replace all occurrences of the use of the imported function
+        content = content.replace(new RegExp(`${importName}\\.${functionName}`, 'g'), newFunctionName);
+      }
+    }
+
+    return content;
   }
 
   private getAbsolutePath(filePath: string, parentPath: string): string {
@@ -53,26 +139,5 @@ export class ImportResolver {
     }
 
     return filePath;
-  }
-
-  private async getFileImports(filePath: string): Promise<string[]> {
-    const content = await fs.readFile(filePath, 'utf-8');
-    const lines = content.split('\n');
-    const imports: string[] = [];
-
-    for (const line of lines) {
-      if (line.trim().startsWith('import')) {
-        const importPath = line.split(' ')[3];
-
-        if (!importPath) {
-          console.warn(`Invalid import statement in file: ${filePath}.\n${line}`);
-          continue;
-        }
-
-        imports.push(this.getAbsolutePath(importPath, filePath));
-      }
-    }
-
-    return imports;
   }
 }

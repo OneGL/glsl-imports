@@ -1,7 +1,9 @@
 import { ImportResolver } from './import-resolver';
 
 async function main() {
-  const output = await ImportResolver.resolve('./example/input.txt');
+  const inputFilePath = './example/input.glsl';
+  const output = await ImportResolver.resolve(inputFilePath);
+  console.log("\n\n")
   console.log(output);
 }
 
