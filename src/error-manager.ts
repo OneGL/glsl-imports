@@ -2,7 +2,7 @@ import * as path from 'path';
 import { platform } from 'os';
 import { Stream } from 'stream';
 import { exec } from 'child_process';
-import { FRAGMENT_EXTS, VERTEX_EXTS } from './constants';
+import { FRAGMENT_EXTS, VERTEX_EXTS } from './constants.js';
 
 type ErrorData = {
   line: number;

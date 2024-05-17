@@ -1,26 +1,20 @@
-export class Graph {
-    constructor() {
-        Object.defineProperty(this, "adjList", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
+var Graph = /** @class */ (function () {
+    function Graph() {
         this.adjList = new Map();
     }
-    addEdge(src, dest) {
-        const neighbors = this.adjList.get(src);
+    Graph.prototype.addEdge = function (src, dest) {
+        var neighbors = this.adjList.get(src);
         if (neighbors) {
             neighbors.push(dest);
         }
         else {
             this.adjList.set(src, [dest]);
         }
-    }
-    getNeighbors(node) {
+    };
+    Graph.prototype.getNeighbors = function (node) {
         return this.adjList.get(node) || [];
-    }
-    dfs(node, visited, recStack) {
+    };
+    Graph.prototype.dfs = function (node, visited, recStack) {
         if (recStack.has(node)) {
             return true;
         }
@@ -29,24 +23,28 @@ export class Graph {
         }
         visited.add(node);
         recStack.add(node);
-        const neighbors = this.adjList.get(node) || [];
-        for (const neighbor of neighbors) {
+        var neighbors = this.adjList.get(node) || [];
+        for (var _i = 0, neighbors_1 = neighbors; _i < neighbors_1.length; _i++) {
+            var neighbor = neighbors_1[_i];
             if (this.dfs(neighbor, visited, recStack)) {
                 return true;
             }
         }
         recStack.delete(node);
         return false;
-    }
-    hasCycle() {
-        const visited = new Set();
-        const recStack = new Set();
-        for (const node of this.adjList.keys()) {
+    };
+    Graph.prototype.hasCycle = function () {
+        var visited = new Set();
+        var recStack = new Set();
+        var nodes = Array.from(this.adjList.keys());
+        for (var _i = 0, nodes_1 = nodes; _i < nodes_1.length; _i++) {
+            var node = nodes_1[_i];
             if (this.dfs(node, visited, recStack)) {
                 return true;
             }
         }
         return false;
-    }
-}
-//# sourceMappingURL=graph.js.map
+    };
+    return Graph;
+}());
+export { Graph };

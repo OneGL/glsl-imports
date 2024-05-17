@@ -1,37 +1,31 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "skipLibCheck": true,
-    "rootDir": "./src",
+    "incremental": true,
+    "target": "es5",
+    
+    // This is for VSCode. Without this line, VSCode's Typescript server
+    // includes *DOM* types in typechecks, and complains that location() is
+    // window.location, when in fact it's peggy's location() function.
+    "lib": ["ESNext"],
 
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "esModuleInterop": true,
+    // Create ESM modules
+    "module": "NodeNext",
+    // Specify multiple folders that act like `./node_modules/@types`
+    "typeRoots": ["node_modules/@types"],
 
-    /* Types */
+    "moduleResolution": "NodeNext",
+
+    // Generate .d.ts files from TypeScript and JavaScript files in your project
     "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-
-    /* Linting */
+    // Specify an output folder for all emitted files.
+    "outDir": "./dist",
+    // Emit additional JavaScript to ease support for importing CommonJS modules. This enables `allowSyntheticDefaultImports` for type compatibility. */
+    "esModuleInterop": true,                             
+    // Ensure that casing is correct in imports
+    "forceConsistentCasingInFileNames": true, 
+    // Enable all strict type-checking options.
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "forceConsistentCasingInFileNames": true,
-
-    /* Output */
-    "outDir": "dist"
-  },
-  "tsc-alias": {
-    "verbose": false,
-    "resolveFullPaths": true,
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "**/__tests__/*"]
+    // Skip type checking all .d.ts files
+    "skipLibCheck": true
+  }
 }

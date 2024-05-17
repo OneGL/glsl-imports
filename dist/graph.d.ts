@@ -6,4 +6,3 @@ export declare class Graph<T> {
     private dfs;
     hasCycle(): boolean;
 }
-//# sourceMappingURL=graph.d.ts.map

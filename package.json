@@ -1,17 +1,8 @@
 {
   "name": "glsl-imports",
-  "module": "index.ts",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist-cjs/index.js"
-    }
-  },
   "scripts": {
-    "build": "rm -rf dist dist-cjs && tsc && tsc --project tsconfig.cjs.json && cp package.json dist/package.json && cp package.json dist-cjs/package.json"
+    "build": "rm -rf dist && tsc"
   },
   "devDependencies": {
     "@types/bun": "latest"

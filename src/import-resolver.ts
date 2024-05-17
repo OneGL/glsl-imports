@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs/promises';
-import { Graph } from './graph';
+import { Graph } from './graph.js';
 import { parser, generate } from '@onegl/glsl-parser';
 import { visit, type ImportStatementNode, type Program } from '@onegl/glsl-parser/ast';
 

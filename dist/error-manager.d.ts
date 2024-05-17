@@ -13,4 +13,3 @@ export declare class ErrorManager {
     static getPlatformName(): string;
 }
 export {};
-//# sourceMappingURL=error-manager.d.ts.map

@@ -46,7 +46,9 @@ export class Graph<T> {
     const visited = new Set<T>();
     const recStack = new Set<T>();
 
-    for (const node of this.adjList.keys()) {
+    const nodes = Array.from(this.adjList.keys());
+
+    for (const node of nodes) {
       if (this.dfs(node, visited, recStack)) {
         return true;
       }

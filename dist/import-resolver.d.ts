@@ -1,4 +1,4 @@
-import { Graph } from './graph';
+import { Graph } from './graph.js';
 export declare class ImportResolver {
     private graph;
     static resolve(filePath: string): Promise<string>;
@@ -14,4 +14,3 @@ export declare class ImportResolver {
     getFileContent(filePath: string): Promise<string>;
     private getAbsolutePath;
 }
-//# sourceMappingURL=import-resolver.d.ts.map
