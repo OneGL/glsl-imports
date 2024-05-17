@@ -1,0 +1,24 @@
+{
+  "name": "glsl-imports",
+  "module": "index.ts",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc && cp package.json dist/package.json"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@onegl/glsl-parser": "git+https://github.com/OneGL/glsl-parser.git"
+  }
+}

@@ -1,8 +1,8 @@
 import path from 'path';
 import fs from 'fs/promises';
 import { Graph } from './graph';
-import { parser, generate } from '@shaderfrog/glsl-parser';
-import { visit, type ImportStatementNode, type Program } from '@shaderfrog/glsl-parser/ast';
+import { parser, generate } from '@onegl/glsl-parser';
+import { visit, type ImportStatementNode, type Program } from '@onegl/glsl-parser/ast';
 
 export class ImportResolver {
   private graph: Graph<string> = new Graph();
