@@ -2,16 +2,30 @@ import path from 'path';
 import fs from 'fs/promises';
 import { Graph } from './graph';
 import { parser, generate } from '@shaderfrog/glsl-parser';
-import { renameFunctions } from '@shaderfrog/glsl-parser/parser/utils';
-import type { ImportStatementNode, Program } from '@shaderfrog/glsl-parser/ast';
+import { visit, type ImportStatementNode, type Program } from '@shaderfrog/glsl-parser/ast';
 
 export class ImportResolver {
   private graph: Graph<string> = new Graph();
 
   static async resolve(filePath: string): Promise<string> {
+    filePath = path.resolve(filePath);
     const importGraph = new ImportResolver();
     await importGraph.buildImportGraph(filePath);
+    await importGraph.reserverRootFileFunctions(filePath);
     return await importGraph.combineFiles(filePath);
+  }
+
+  private async reserverRootFileFunctions(filePath: string) {
+    const content = await fs.readFile(filePath, 'utf-8');
+    const ast = parser.parse(content);
+
+    visit(ast, {
+      function_header: {
+        enter: (path) => {
+          this.reservedNames.set(path.node.name.identifier, filePath);
+        },
+      },
+    });
   }
 
   async buildImportGraph(filePath: string): Promise<Graph<string>> {
@@ -65,17 +79,17 @@ export class ImportResolver {
 
   private reservedNames: Map<string, string> = new Map();
 
-  private getFunctionName(functionName: string, filePath: string) {
-    const stem = path.basename(filePath, path.extname(filePath));
-    const fileId = this.getFileId(filePath);
+  private getFunctionName(functionName: string, functionOriginfilePath: string) {
+    const stem = path.basename(functionOriginfilePath, path.extname(functionOriginfilePath));
+    const fileId = this.getFileId(functionOriginfilePath);
     const uniqueName = `${stem}_${functionName}_${fileId}`;
 
     const reservedBy = this.reservedNames.get(functionName);
 
     if (reservedBy === undefined) {
-      this.reservedNames.set(functionName, filePath);
+      this.reservedNames.set(functionName, functionOriginfilePath);
       return functionName;
-    } else if (reservedBy === filePath) {
+    } else if (reservedBy === functionOriginfilePath) {
       return functionName;
     }
 
@@ -104,33 +118,91 @@ export class ImportResolver {
     const ast = parser.parse(content);
     const imports = this.getImports(ast, filePath);
 
-    // Rename functions
-    renameFunctions(ast.scopes[0], (name) => this.getFunctionName(name, filePath));
-    content = generate(ast);
+    visit(ast, {
+      function_call: {
+        enter: (path) => {
+          let importName: string | undefined;
+          let originalFunctionName: string | undefined;
 
-    // Rename imported functions
-    for (const { importName, importPath } of imports) {
-      // This regex will match all the function calls from the imported file
-      const regex = new RegExp(`${importName}\\.(\\w+)\\(`, 'g');
+          if (path.node.type !== 'function_call') {
+            return;
+          }
 
-      let match;
+          if (path.node.identifier.type !== 'postfix') {
+            return;
+          }
 
-      while (true) {
-        match = regex.exec(content);
+          const expression = path.node.identifier.expression;
+          const postfix = path.node.identifier.postfix;
 
-        if (!match) {
-          break;
-        }
+          // Check expression
+          if (expression.type !== 'type_specifier') {
+            return;
+          }
 
-        const functionName = match[1];
-        const newFunctionName = this.getFunctionName(functionName, importPath);
+          if (!('identifier' in expression.specifier)) {
+            return;
+          }
 
-        // Replace all occurrences of the use of the imported function
-        content = content.replace(new RegExp(`${importName}\\.${functionName}`, 'g'), newFunctionName);
-      }
-    }
+          if (typeof expression.specifier.identifier !== 'string') {
+            return;
+          }
 
-    return content;
+          // Check postfix
+          if (postfix.type !== 'field_selection') {
+            return;
+          }
+
+          if (!('identifier' in postfix.selection)) {
+            return;
+          }
+
+          if (typeof postfix.selection.identifier !== 'string') {
+            return;
+          }
+
+          importName = expression.specifier.identifier;
+          originalFunctionName = postfix.selection.identifier;
+
+          const importPath = imports.find((importData) => importData.importName === importName)?.importPath;
+
+          if (!importPath) {
+            return;
+          }
+
+          const newFunctionName = this.getFunctionName(originalFunctionName, importPath);
+
+          path.replaceWith({
+            type: 'function_call',
+            lp: path.node.lp,
+            rp: path.node.rp,
+            args: path.node.args,
+            identifier: {
+              type: 'type_specifier',
+              specifier: {
+                type: 'type_name',
+                identifier: newFunctionName,
+                whitespace: '',
+              },
+              quantifier: null,
+            },
+          });
+        },
+      },
+    });
+
+    // Rename function declarations
+    visit(ast, {
+      function_header: {
+        enter: (path) => {
+          const functionName = path.node.name.identifier;
+          const newFunctionName = this.getFunctionName(functionName, filePath);
+          path.node.name.identifier = newFunctionName;
+        },
+      },
+    });
+
+    return generate(ast);
   }
 
   private getAbsolutePath(filePath: string, parentPath: string): string {
